@@ -17,8 +17,9 @@ def check_and_notify():
     for rss_url in rss_list:
         rss_url = rss_url.strip()
         feed = feedparser.parse(rss_url)
-
-        last_check_time_file = f"{feed.feed.title}_last_check.txt"
+        feed_title = feed.feed.get('title', 'Unknown Feed')
+        
+        last_check_time_file = f"{feed_title}_last_check.txt"
 
         # 读取上次检查的时间戳
         if os.path.exists(last_check_time_file):
@@ -28,14 +29,16 @@ def check_and_notify():
             last_check_time = 0
 
         new_entries = [entry for entry in feed.entries if time.mktime(entry.published_parsed) > last_check_time]
-        
+
         if new_entries:
             updated = True
             for entry in new_entries:
-                message_content += f"博客: {feed.feed.title}\n"
-                message_content += f"最新文章: {entry.title}\n"
-                message_content += f"链接: {entry.link}\n\n"
-                
+                entry_title = entry.get('title', 'No Title')
+                entry_link = entry.get('link', 'No Link')
+                message_content += f"博客: {feed_title}\n"
+                message_content += f"最新文章: {entry_title}\n"
+                message_content += f"链接: {entry_link}\n\n"
+
             # 更新最后检查时间为最新文章的时间戳
             latest_time = max(time.mktime(entry.published_parsed) for entry in new_entries)
             with open(last_check_time_file, 'w') as f:
