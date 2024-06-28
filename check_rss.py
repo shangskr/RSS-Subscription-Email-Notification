@@ -3,70 +3,70 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
-import json
+import time
 
-# 配置邮件发送
-SMTP_SERVER = os.getenv('SMTP_SERVER')
-SMTP_PORT = os.getenv('SMTP_PORT')
-SMTP_USER = os.getenv('SMTP_USER')
-SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
-TO_EMAIL = os.getenv('TO_EMAIL')
+# 读取RSS列表
+with open('rss_list.txt', 'r') as file:
+    rss_list = file.readlines()
 
-# 读取RSS链接
-RSS_FEEDS = [
-    'https://hexo.shangskr.top/atom.xml'
-]
+# 检查并发送邮件
+def check_and_notify():
+    updated = False
+    message_content = ""
 
-# 读取上一次检查的时间戳
-def load_last_check():
-    if os.path.exists('last_check.json'):
-        with open('last_check.json', 'r') as f:
-            return json.load(f)
-    return {}
+    for rss_url in rss_list:
+        rss_url = rss_url.strip()
+        feed = feedparser.parse(rss_url)
+        latest_entry = feed.entries[0]
 
-# 保存最新的时间戳
-def save_last_check(last_check):
-    with open('last_check.json', 'w') as f:
-        json.dump(last_check, f)
+        last_check_time_file = f"{feed.feed.title}_last_check.txt"
 
-# 发送邮件
-def send_email(subject, body):
+        # 读取上次检查的时间戳
+        if os.path.exists(last_check_time_file):
+            with open(last_check_time_file, 'r') as f:
+                last_check_time = float(f.read().strip())
+        else:
+            last_check_time = 0
+
+        latest_time = time.mktime(latest_entry.published_parsed)
+
+        if latest_time > last_check_time:
+            updated = True
+            message_content += f"博客: {feed.feed.title}\n"
+            message_content += f"最新文章: {latest_entry.title}\n"
+            message_content += f"链接: {latest_entry.link}\n\n"
+
+            # 更新最后检查时间
+            with open(last_check_time_file, 'w') as f:
+                f.write(str(latest_time))
+
+    if updated:
+        send_email(message_content)
+
+def send_email(message_content):
+    email_user = os.getenv('EMAIL_USER')
+    email_pass = os.getenv('EMAIL_PASS')
+    email_recipient = os.getenv('EMAIL_RECIPIENT')
+    smtp_server = os.getenv('SMTP_SERVER')
+    smtp_port = os.getenv('SMTP_PORT')
+
     msg = MIMEMultipart()
-    msg['From'] = SMTP_USER
-    msg['To'] = TO_EMAIL
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
-    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+    msg['From'] = email_user
+    msg['To'] = email_recipient
+    msg['Subject'] = "RSS Feed 更新通知"
+
+    msg.attach(MIMEText(message_content, 'plain'))
+
+    try:
+        server = smtplib.SMTP(smtp_server, smtp_port)
         server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.login(email_user, email_pass)
         text = msg.as_string()
-        server.sendmail(SMTP_USER, TO_EMAIL, text)
-
-# 检查RSS变动
-def check_rss():
-    last_check = load_last_check()
-    new_last_check = {}
-    new_posts = []
-
-    for feed_url in RSS_FEEDS:
-        feed = feedparser.parse(feed_url)
-        if feed.entries:
-            latest_entry = feed.entries[0]
-            new_last_check[feed_url] = latest_entry.published
-
-            if feed_url in last_check:
-                if latest_entry.published > last_check[feed_url]:
-                    new_posts.append((feed_url, latest_entry))
-            else:
-                new_posts.append((feed_url, latest_entry))
-
-    save_last_check(new_last_check)
-
-    if new_posts:
-        for feed_url, entry in new_posts:
-            subject = f"New post in {feed_url}"
-            body = f"New post titled '{entry.title}' at {feed_url}\n\nLink: {entry.link}"
-            send_email(subject, body)
+        server.sendmail(email_user, email_recipient, text)
+        server.quit()
+        print("邮件发送成功")
+    except Exception as e:
+        print(f"邮件发送失败: {e}")
 
 if __name__ == "__main__":
-    check_rss()
+    check_and_notify()
