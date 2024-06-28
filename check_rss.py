@@ -4,6 +4,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 import time
+from urllib.error import URLError, HTTPError
+from http.client import RemoteDisconnected
 
 # 读取RSS列表
 with open('rss_list.txt', 'r') as file:
@@ -16,9 +18,14 @@ def check_and_notify():
 
     for rss_url in rss_list:
         rss_url = rss_url.strip()
-        feed = feedparser.parse(rss_url)
-        feed_title = feed.feed.get('title', 'Unknown Feed')
+        try:
+            feed = feedparser.parse(rss_url)
+        except (URLError, HTTPError, RemoteDisconnected) as e:
+            print(f"Error accessing {rss_url}: {e}")
+            continue
         
+        feed_title = feed.feed.get('title', 'Unknown Feed')
+
         last_check_time_file = f"{feed_title}_last_check.txt"
 
         # 读取上次检查的时间戳
