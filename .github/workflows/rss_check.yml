@@ -23,6 +23,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install feedparser
 
+      - name: Show current directory
+        run: pwd
+
+      - name: List directory contents
+        run: ls -al
+
       - name: Run RSS check script
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
