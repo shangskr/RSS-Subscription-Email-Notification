@@ -2,8 +2,9 @@ name: RSS Check
 
 on:
   schedule:
-    - cron: "0 22 */2 * *"
-  workflow_dispatch:
+    - cron: '0 */6 * * *'  # 每6小时运行一次
+  workflow_dispatch:  # 允许手动触发
+
 jobs:
   check_rss:
     runs-on: ubuntu-latest
@@ -21,7 +22,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-      working-directory: ./rss_notifier  # 切换到项目根目录
         
     - name: Check RSS feeds
       env:
@@ -32,7 +32,6 @@ jobs:
         SMTP_PORT: ${{ secrets.SMTP_PORT }}
       run: |
         python check_rss.py
-      working-directory: ./rss_notifier  # 切换到项目根目录
         
     - name: Commit changes
       run: |
@@ -41,4 +40,3 @@ jobs:
         git add .
         git diff-index --quiet HEAD || git commit -m "Update last check time"
         git push
-      working-directory: ./rss_notifier  # 切换到项目根目录
