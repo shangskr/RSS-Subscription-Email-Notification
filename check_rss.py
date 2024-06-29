@@ -10,11 +10,10 @@ from http.client import RemoteDisconnected
 # 确认当前工作目录
 print(f"当前工作目录: {os.getcwd()}")
 
-# 读取RSS列表
+# 读取 RSS 列表
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
-# 检查并发送邮件
 def check_and_notify():
     updated = False
     message_content = ""
@@ -24,15 +23,15 @@ def check_and_notify():
         try:
             feed = feedparser.parse(rss_url)
         except (URLError, HTTPError, RemoteDisconnected) as e:
-            print(f"Error accessing {rss_url}: {e}")
+            print(f"访问 {rss_url} 出错: {e}")
             continue
         
         feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
         last_check_time_file = f"{feed_title}_last_check.txt"
 
-        print(f"Processing feed: {feed_title}")
+        print(f"处理订阅源: {feed_title}")
 
-        # 读取上次检查的时间戳
+        # 读取上次检查时间
         if os.path.exists(last_check_time_file):
             with open(last_check_time_file, 'r') as f:
                 last_check_time = float(f.read().strip())
@@ -53,7 +52,7 @@ def check_and_notify():
                 message_content += f"最新文章: {entry_title}\n"
                 message_content += f"链接: {entry_link}\n\n"
 
-            # 更新最后检查时间为最新文章的时间戳
+            # 更新最后检查时间
             latest_time = max(time.mktime(entry.published_parsed) for entry in new_entries)
             with open(last_check_time_file, 'w') as f:
                 f.write(str(latest_time))
