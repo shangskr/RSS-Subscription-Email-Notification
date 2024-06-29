@@ -7,6 +7,9 @@ import time
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
 
+# 确认当前工作目录
+print(f"当前工作目录: {os.getcwd()}")
+
 # 读取RSS列表
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
@@ -26,6 +29,8 @@ def check_and_notify():
         
         feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
         last_check_time_file = f"{feed_title}_last_check.txt"
+
+        print(f"Processing feed: {feed_title}")
 
         # 读取上次检查的时间戳
         if os.path.exists(last_check_time_file):
