@@ -52,9 +52,11 @@ def check_and_notify():
                 f.write(str(latest_time))
 
     if updated:
-        send_email(message_content)
+        send_email("RSS Feed 更新通知", message_content)
+    else:
+        send_email("RSS Feed 检查结果", "距离上次检查，RSS 没有变动哦~")
 
-def send_email(message_content):
+def send_email(subject, message_content):
     email_user = os.getenv('EMAIL_USER')
     email_pass = os.getenv('EMAIL_PASS')
     email_recipient = os.getenv('EMAIL_RECIPIENT')
@@ -64,7 +66,7 @@ def send_email(message_content):
     msg = MIMEMultipart()
     msg['From'] = email_user
     msg['To'] = email_recipient
-    msg['Subject'] = "RSS Feed 更新通知"
+    msg['Subject'] = subject
 
     msg.attach(MIMEText(message_content, 'plain'))
 
