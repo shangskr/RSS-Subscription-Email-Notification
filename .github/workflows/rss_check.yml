@@ -2,8 +2,8 @@ name: RSS Check
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # 每6小时运行一次
-  workflow_dispatch:  # 允许手动触发
+    - cron: "0 22 */2 * *"
+  workflow_dispatch:
 
 jobs:
   check_rss:
