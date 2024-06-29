@@ -24,7 +24,7 @@ def check_and_notify():
             print(f"Error accessing {rss_url}: {e}")
             continue
         
-        feed_title = feed.feed.get('title', 'Unknown Feed')
+        feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
 
         last_check_time_file = f"{feed_title}_last_check.txt"
 
@@ -32,8 +32,10 @@ def check_and_notify():
         if os.path.exists(last_check_time_file):
             with open(last_check_time_file, 'r') as f:
                 last_check_time = float(f.read().strip())
+                print(f"读取上次检查时间: {time.ctime(last_check_time)}")
         else:
             last_check_time = 0
+            print(f"没有找到上次检查时间文件 {last_check_time_file}")
 
         new_entries = [entry for entry in feed.entries if time.mktime(entry.published_parsed) > last_check_time]
 
@@ -50,6 +52,7 @@ def check_and_notify():
             latest_time = max(time.mktime(entry.published_parsed) for entry in new_entries)
             with open(last_check_time_file, 'w') as f:
                 f.write(str(latest_time))
+                print(f"更新最后检查时间: {time.ctime(latest_time)}")
 
     if updated:
         send_email("RSS Feed 更新通知", message_content)
