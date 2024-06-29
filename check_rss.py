@@ -37,7 +37,8 @@ def check_and_notify():
             last_check_time = 0
             print(f"没有找到上次检查时间文件 {last_check_time_file}")
 
-        new_entries = [entry for entry in feed.entries if time.mktime(entry.published_parsed) > last_check_time]
+        new_entries = [entry for entry in feed.entries if 'published_parsed' in entry and time.mktime(entry.published_parsed) > last_check_time]
+        print(f"找到 {len(new_entries)} 条新文章")
 
         if new_entries:
             updated = True
