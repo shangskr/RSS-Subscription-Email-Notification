@@ -7,6 +7,9 @@ import time
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
 
+# 创建保存检查时间文件的目录
+os.makedirs('check', exist_ok=True)
+
 # 读取RSS列表
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
@@ -24,7 +27,7 @@ def check_and_notify():
             continue
         
         feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
-        last_check_file = f"{feed_title}_last_check.txt"
+        last_check_file = os.path.join('check', f"{feed_title}_last_check.txt")
         
         print(f"检查RSS源: {feed_title}")
         
