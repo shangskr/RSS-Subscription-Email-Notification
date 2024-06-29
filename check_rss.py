@@ -25,7 +25,6 @@ def check_and_notify():
             continue
         
         feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
-
         last_check_time_file = f"{feed_title}_last_check.txt"
 
         # 读取上次检查的时间戳
@@ -54,6 +53,8 @@ def check_and_notify():
             with open(last_check_time_file, 'w') as f:
                 f.write(str(latest_time))
                 print(f"更新最后检查时间: {time.ctime(latest_time)}")
+        else:
+            print(f"{feed_title} 没有新文章")
 
     if updated:
         send_email("RSS Feed 更新通知", message_content)
