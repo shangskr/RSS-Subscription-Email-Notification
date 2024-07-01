@@ -7,6 +7,7 @@ import time
 import requests
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
+from socket import timeout as TimeoutError
 
 # 创建保存检查时间文件的目录
 os.makedirs('check', exist_ok=True)
@@ -19,8 +20,8 @@ def fetch_feed(rss_url):
     try:
         feed = feedparser.parse(rss_url)
         return feed
-    except (URLError, HTTPError, RemoteDisconnected) as e:
-        print(f"访问 {rss_url} 出错: {e}")
+    except (URLError, HTTPError, RemoteDisconnected, TimeoutError) as e:
+        print(f"使用 feedparser 获取 {rss_url} 出错: {e}")
         return None
 
 def fetch_feed_with_requests(rss_url):
@@ -32,11 +33,11 @@ def fetch_feed_with_requests(rss_url):
     }
     
     try:
-        response = requests.get(rss_url, headers=headers)
+        response = requests.get(rss_url, headers=headers, timeout=10)  # 设置超时时间为10秒
         response.raise_for_status()
         feed = feedparser.parse(response.content)
         return feed
-    except (requests.exceptions.RequestException, URLError, HTTPError, RemoteDisconnected) as e:
+    except (requests.exceptions.RequestException, URLError, HTTPError, RemoteDisconnected, TimeoutError) as e:
         print(f"访问 {rss_url} 出错: {e}")
         return None
 
