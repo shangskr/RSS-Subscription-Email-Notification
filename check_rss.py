@@ -10,7 +10,7 @@ from http.client import RemoteDisconnected
 # 创建保存检查时间文件的目录
 os.makedirs('check', exist_ok=True)
 
-# 读取RSS列表
+# 读取 RSS 列表
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
@@ -21,7 +21,7 @@ def check_and_notify():
     for rss_url in rss_list:
         rss_url = rss_url.strip()
         try:
-            feed = feedparser.parse(rss_url)
+            feed = feedparser.parse(rss_url, sanitize_html=False)  # 尝试添加 sanitize_html=False
         except (URLError, HTTPError, RemoteDisconnected) as e:
             print(f"访问 {rss_url} 出错: {e}")
             continue
@@ -29,7 +29,7 @@ def check_and_notify():
         feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
         last_check_file = os.path.join('check', f"{feed_title}_last_check.txt")
         
-        print(f"检查RSS源: {feed_title}")
+        print(f"检查 RSS 源: {feed_title}")
         
         # 读取上次检查时间
         if os.path.exists(last_check_file):
@@ -45,7 +45,7 @@ def check_and_notify():
             for entry in new_entries:
                 entry_title = entry.get('title', 'No Title')
                 entry_link = entry.get('link', 'No Link')
-                message_content += f"RSS源: {feed_title}\n"
+                message_content += f"RSS 源: {feed_title}\n"
                 message_content += f"文章标题: {entry_title}\n"
                 message_content += f"文章链接: {entry_link}\n\n"
             
@@ -57,9 +57,9 @@ def check_and_notify():
             print(f"{feed_title} 没有新文章")
     
     if updated:
-        send_email("RSS更新提醒", message_content)
+        send_email("RSS 更新提醒", message_content)
     else:
-        print("没有RSS源更新")
+        print("没有 RSS 源更新")
 
 def send_email(subject, message):
     msg = MIMEMultipart()
@@ -70,10 +70,13 @@ def send_email(subject, message):
     
     server = smtplib.SMTP(os.environ['SMTP_SERVER'], os.environ['SMTP_PORT'])
     server.starttls()
-    server.login(os.environ['EMAIL_USER'], os.environ['EMAIL_PASS'])
-    server.send_message(msg)
-    server.quit()
-    print("邮件发送成功")
+    try:
+        server.login(os.environ['EMAIL_USER'], os.environ['EMAIL_PASS'])
+        server.send_message(msg)
+        server.quit()
+        print("邮件发送成功")
+    except smtplib.SMTPException as e:
+        print(f"邮件发送出错: {e}")
 
 if __name__ == "__main__":
     check_and_notify()
