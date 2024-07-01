@@ -4,6 +4,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 import time
+import requests
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
 
@@ -14,32 +15,46 @@ os.makedirs('check', exist_ok=True)
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
+def fetch_feed(rss_url):
+    try:
+        response = requests.get(rss_url, headers={'User-Agent': 'Mozilla/5.0'})
+        response.raise_for_status()
+        feed = feedparser.parse(response.content)
+        return feed
+    except (requests.exceptions.RequestException, URLError, HTTPError, RemoteDisconnected) as e:
+        print(f"访问 {rss_url} 出错: {e}")
+        return None
+
 def check_and_notify():
     updated = False
     message_content = ""
-    
+
     for rss_url in rss_list:
         rss_url = rss_url.strip()
-        try:
-            feed = feedparser.parse(rss_url)
-        except (URLError, HTTPError, RemoteDisconnected) as e:
-            print(f"访问 {rss_url} 出错: {e}")
-            continue
+        feed = fetch_feed(rss_url)
         
+        if not feed or not feed.entries:
+            print(f"第一次获取 {rss_url} 失败，尝试使用 requests 再获取一次")
+            feed = fetch_feed(rss_url)
+
+        if not feed or not feed.entries:
+            print(f"访问 {rss_url} 失败两次，跳过")
+            continue
+
         feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
         last_check_file = os.path.join('check', f"{feed_title}_last_check.txt")
-        
+
         print(f"检查RSS源: {feed_title}")
-        
+
         # 读取上次检查时间
         if os.path.exists(last_check_file):
             with open(last_check_file, 'r') as f:
                 last_check_time = float(f.read().strip())
         else:
             last_check_time = 0
-        
+
         new_entries = [entry for entry in feed.entries if entry.get('published_parsed') and time.mktime(entry.published_parsed) > last_check_time]
-        
+
         if new_entries:
             updated = True
             for entry in new_entries:
@@ -48,14 +63,14 @@ def check_and_notify():
                 message_content += f"RSS源: {feed_title}\n"
                 message_content += f"文章标题: {entry_title}\n"
                 message_content += f"文章链接: {entry_link}\n\n"
-            
+
             # 更新最后检查时间
             latest_time = max(time.mktime(entry.published_parsed) for entry in new_entries)
             with open(last_check_file, 'w') as f:
                 f.write(str(latest_time))
         else:
             print(f"{feed_title} 没有新文章")
-    
+
     if updated:
         send_email("RSS更新提醒", message_content)
     else:
@@ -64,10 +79,10 @@ def check_and_notify():
 def send_email(subject, message):
     msg = MIMEMultipart()
     msg['From'] = os.environ['EMAIL_USER']
-    msg['To'] = os.environ['EMAIL_RECIPIENT'] 
+    msg['To'] = os.environ['EMAIL_RECIPIENT']
     msg['Subject'] = subject
     msg.attach(MIMEText(message, 'plain'))
-    
+
     server = smtplib.SMTP(os.environ['SMTP_SERVER'], os.environ['SMTP_PORT'])
     server.starttls()
     server.login(os.environ['EMAIL_USER'], os.environ['EMAIL_PASS'])
