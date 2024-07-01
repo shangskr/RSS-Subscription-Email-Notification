@@ -19,7 +19,7 @@ with open('rss_list.txt', 'r') as file:
 
 # 读取特定的RSS源链接列表
 with open('feed.txt', 'r') as feed_file:
-    rss_list.extend([line.strip() for line in feed_file.readlines()])
+    feed_urls = [line.strip() for line in feed_file.readlines()]
 
 def fetch_feed(rss_url):
     try:
@@ -47,11 +47,17 @@ def fetch_feed_with_requests(rss_url):
         return None
 
 def check_rss(rss_url):
-    feed = fetch_feed(rss_url)
+    if rss_url in feed_urls:
+        feed = fetch_feed_with_requests(rss_url)
+    else:
+        feed = fetch_feed(rss_url)
     
     if not feed or not feed.entries:
         print(f"使用 feedparser 获取 {rss_url} 失败，尝试使用 requests 再获取一次")
-        feed = fetch_feed_with_requests(rss_url)
+        if rss_url in feed_urls:
+            feed = fetch_feed_with_requests(rss_url)
+        else:
+            feed = fetch_feed(rss_url)
 
     if not feed or not feed.entries:
         print(f"访问 {rss_url} 失败两次，跳过")
