@@ -7,6 +7,11 @@ import time
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
 import html
+import logging
+
+# 设置日志记录
+logging.basicConfig(filename='rss_checker.log', level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 # 创建保存检查时间文件的目录
 os.makedirs('check', exist_ok=True)
@@ -37,12 +42,14 @@ def check_and_notify():
         try:
             feed = feedparser.parse(rss_url, request_headers={'Accept-Charset': 'utf-8'})
         except (URLError, HTTPError, RemoteDisconnected) as e:
+            logging.error(f"访问 {rss_url} 出错: {e}")
             print(f"访问 {rss_url} 出错: {e}")
             continue
         
         feed_title = get_feed_title(feed).replace(" ", "_")
         last_check_file = os.path.join('check', f"{feed_title}_last_check.txt")
         
+        logging.info(f"检查RSS源: {feed_title}")
         print(f"检查RSS源: {feed_title}")
         
         if os.path.exists(last_check_file):
@@ -66,11 +73,13 @@ def check_and_notify():
             with open(last_check_file, 'w') as f:
                 f.write(str(latest_time))
         else:
+            logging.info(f"{feed_title} 没有新文章")
             print(f"{feed_title} 没有新文章")
     
     if updated:
         send_email("RSS更新提醒", message_content)
     else:
+        logging.info("没有RSS源更新")
         print("没有RSS源更新")
 
 def send_email(subject, message):
@@ -80,12 +89,17 @@ def send_email(subject, message):
     msg['Subject'] = subject
     msg.attach(MIMEText(message, 'plain'))
     
-    server = smtplib.SMTP(os.environ['SMTP_SERVER'], os.environ['SMTP_PORT'])
-    server.starttls()
-    server.login(os.environ['EMAIL_USER'], os.environ['EMAIL_PASS'])
-    server.send_message(msg)
-    server.quit()
-    print("邮件发送成功")
+    try:
+        server = smtplib.SMTP(os.environ['SMTP_SERVER'], os.environ['SMTP_PORT'])
+        server.starttls()
+        server.login(os.environ['EMAIL_USER'], os.environ['EMAIL_PASS'])
+        server.send_message(msg)
+        server.quit()
+        logging.info("邮件发送成功")
+        print("邮件发送成功")
+    except Exception as e:
+        logging.error(f"发送邮件失败: {e}")
+        print(f"发送邮件失败: {e}")
 
 if __name__ == "__main__":
     check_and_notify()
