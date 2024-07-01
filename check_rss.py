@@ -17,10 +17,10 @@ with open('rss_list.txt', 'r') as file:
 
 def fetch_feed(rss_url):
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}  # 默认使用模拟浏览器的 User-Agent
-        if 'tianli-blog.club' not in rss_url:  # 如果不是特定网站，则使用默认 headers
-            headers = {}
-        
+        headers = {}
+        if 'tianli-blog.club' in rss_url:  # 对特定网站使用模拟浏览器的 User-Agent
+            headers = {'User-Agent': 'Mozilla/5.0'}
+
         response = requests.get(rss_url, headers=headers)
         response.raise_for_status()
         feed = feedparser.parse(response.content)
