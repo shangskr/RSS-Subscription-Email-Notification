@@ -1,3 +1,1 @@
 feedparser
-beautifulsoup4
-lxml
