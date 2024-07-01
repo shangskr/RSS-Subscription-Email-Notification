@@ -17,10 +17,21 @@ with open('rss_list.txt', 'r') as file:
 
 def fetch_feed(rss_url):
     try:
-        headers = {}
-        if 'tianli-blog.club' in rss_url:  # 对特定网站使用模拟浏览器的 User-Agent
-            headers = {'User-Agent': 'Mozilla/5.0'}
+        feed = feedparser.parse(rss_url)
+        return feed
+    except (URLError, HTTPError, RemoteDisconnected) as e:
+        print(f"访问 {rss_url} 出错: {e}")
+        return None
 
+def fetch_feed_with_requests(rss_url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
+    
+    try:
         response = requests.get(rss_url, headers=headers)
         response.raise_for_status()
         feed = feedparser.parse(response.content)
@@ -35,11 +46,15 @@ def check_and_notify():
 
     for rss_url in rss_list:
         rss_url = rss_url.strip()
-        feed = fetch_feed(rss_url)
+        
+        if 'tianli-blog.club/feed/' in rss_url:
+            feed = fetch_feed_with_requests(rss_url)
+        else:
+            feed = fetch_feed(rss_url)
         
         if not feed or not feed.entries:
-            print(f"第一次获取 {rss_url} 失败，尝试使用 requests 再获取一次")
-            feed = fetch_feed(rss_url)
+            print(f"使用 feedparser 获取 {rss_url} 失败，尝试使用 requests 再获取一次")
+            feed = fetch_feed_with_requests(rss_url)
 
         if not feed or not feed.entries:
             print(f"访问 {rss_url} 失败两次，跳过")
