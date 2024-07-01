@@ -4,7 +4,6 @@ https://blog.qyliu.top/atom.xml
 https://byer.top/atom.xml
 https://www.anxkj.top/feed/
 https://www.zouht.com/feed
-https://tianli-blog.club/feed/
 https://blog.sinzmise.top/atom.xml
 https://blog.opeach.cn/atom.xml
 https://www.whaleluo.top/atom.xml
