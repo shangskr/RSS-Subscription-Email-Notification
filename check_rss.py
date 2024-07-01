@@ -1,12 +1,14 @@
-import requests
 import feedparser
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 import time
+import requests
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 # 创建保存检查时间文件的目录
 os.makedirs('check', exist_ok=True)
@@ -15,14 +17,31 @@ os.makedirs('check', exist_ok=True)
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
+def requests_with_retries(url, headers=None, retries=3, backoff_factor=0.3):
+    """使用重试机制的requests请求"""
+    session = requests.Session()
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=[500, 502, 503, 504],
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    
+    response = session.get(url, headers=headers)
+    response.raise_for_status()  # 检查请求是否成功
+    response.encoding = response.apparent_encoding  # 确保使用正确的编码
+    return response.text
+
 def check_and_notify():
     updated = False
     message_content = ""
     
     for rss_url in rss_list:
         rss_url = rss_url.strip()
-        
-        # 尝试使用feedparser直接解析URL
         try:
             feed = feedparser.parse(rss_url)
             if feed.bozo:
@@ -33,10 +52,7 @@ def check_and_notify():
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
                 }
-                response = requests.get(rss_url, headers=headers)
-                response.raise_for_status()  # 检查请求是否成功
-                response.encoding = response.apparent_encoding  # 确保使用正确的编码
-                feed_content = response.text  # 将HTTP响应内容作为字符串读取
+                feed_content = requests_with_retries(rss_url, headers=headers)
                 
                 # 移除BOM和空白字符
                 feed_content = feed_content.lstrip('\ufeff \n\r\t')
