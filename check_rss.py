@@ -4,7 +4,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 import time
-import requests
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
 
@@ -15,15 +14,6 @@ os.makedirs('check', exist_ok=True)
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
-def requests_with_headers(url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-    }
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()  # 如果请求失败，则引发HTTPError
-    response.encoding = response.apparent_encoding  # 确保使用正确的编码
-    return response.text
-
 def check_and_notify():
     updated = False
     message_content = ""
@@ -32,24 +22,9 @@ def check_and_notify():
         rss_url = rss_url.strip()
         try:
             feed = feedparser.parse(rss_url)
-            if feed.bozo:
-                raise feed.bozo_exception
-        except (URLError, HTTPError, RemoteDisconnected, Exception) as e:
-            print(f"直接解析 {rss_url} 出错: {e}, 尝试使用requests获取内容")
-            try:
-                feed_content = requests_with_headers(rss_url)
-                
-                # 移除BOM和空白字符
-                feed_content = feed_content.lstrip('\ufeff \n\r\t')
-                
-                # 使用feedparser解析RSS feed内容
-                feed = feedparser.parse(feed_content)
-                if feed.bozo:
-                    print(f"解析RSS源 {rss_url} 时出错: {feed.bozo_exception}")
-                    continue
-            except (requests.RequestException, URLError, HTTPError, RemoteDisconnected) as e:
-                print(f"使用requests访问 {rss_url} 出错: {e}")
-                continue
+        except (URLError, HTTPError, RemoteDisconnected) as e:
+            print(f"访问 {rss_url} 出错: {e}")
+            continue
         
         feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
         last_check_file = os.path.join('check', f"{feed_title}_last_check.txt")
