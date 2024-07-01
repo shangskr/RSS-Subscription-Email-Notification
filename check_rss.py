@@ -14,6 +14,16 @@ os.makedirs('check', exist_ok=True)
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
+def get_feed_title(feed):
+    if 'title' in feed.feed:
+        return feed.feed.title
+    elif 'title' in feed:
+        return feed.title
+    elif len(feed.entries) > 0 and 'title' in feed.entries[0]:
+        return feed.entries[0].title
+    else:
+        return 'Unknown Feed'
+
 def check_and_notify():
     updated = False
     message_content = ""
@@ -26,7 +36,7 @@ def check_and_notify():
             print(f"访问 {rss_url} 出错: {e}")
             continue
         
-        feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
+        feed_title = get_feed_title(feed).replace(" ", "_")
         last_check_file = os.path.join('check', f"{feed_title}_last_check.txt")
         
         print(f"检查RSS源: {feed_title}")
