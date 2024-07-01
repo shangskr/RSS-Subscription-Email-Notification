@@ -15,6 +15,14 @@ os.makedirs('check', exist_ok=True)
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
+# 读取需要使用模拟浏览器 User-Agent 的链接列表
+ua_file = 'feed.txt'
+if os.path.exists(ua_file):
+    with open(ua_file, 'r') as file:
+        ua_list = [line.strip() for line in file.readlines()]
+else:
+    ua_list = []
+
 def fetch_feed(rss_url):
     try:
         feed = feedparser.parse(rss_url)
@@ -47,7 +55,7 @@ def check_and_notify():
     for rss_url in rss_list:
         rss_url = rss_url.strip()
         
-        if 'tianli-blog.club/feed/' in rss_url:
+        if rss_url in ua_list:
             feed = fetch_feed_with_requests(rss_url)
         else:
             feed = fetch_feed(rss_url)
