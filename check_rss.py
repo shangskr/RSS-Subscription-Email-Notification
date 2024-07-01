@@ -23,10 +23,16 @@ def parse_rss_content(feed):
     parsed_entries = []
     for entry in feed.entries:
         # 使用BeautifulSoup解析entry内容
-        soup = BeautifulSoup(entry.description, 'lxml')
-        entry_title = entry.get('title', 'No Title')
-        entry_link = entry.get('link', 'No Link')
-        entry_content = soup.get_text()
+        try:
+            soup = BeautifulSoup(entry.description, 'lxml')
+            entry_title = entry.get('title', 'No Title')
+            entry_link = entry.get('link', 'No Link')
+            entry_content = soup.get_text()
+        except AttributeError as e:
+            print(f"解析entry出错: {e}")
+            entry_title = entry.get('title', 'No Title')
+            entry_link = entry.get('link', 'No Link')
+            entry_content = "No Content"
 
         parsed_entries.append({
             'title': entry_title,
