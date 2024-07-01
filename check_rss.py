@@ -30,10 +30,16 @@ def check_and_notify():
         except (URLError, HTTPError, RemoteDisconnected, Exception) as e:
             print(f"直接解析 {rss_url} 出错: {e}, 尝试使用requests获取内容")
             try:
-                response = requests.get(rss_url)
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+                }
+                response = requests.get(rss_url, headers=headers)
                 response.raise_for_status()  # 检查请求是否成功
                 response.encoding = response.apparent_encoding  # 确保使用正确的编码
                 feed_content = response.text  # 将HTTP响应内容作为字符串读取
+                
+                # 移除BOM和空白字符
+                feed_content = feed_content.lstrip('\ufeff \n\r\t')
                 
                 # 使用feedparser解析RSS feed内容
                 feed = feedparser.parse(feed_content)
