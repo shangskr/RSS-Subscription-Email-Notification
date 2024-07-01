@@ -6,6 +6,7 @@ import os
 import time
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
+import html
 
 # 创建保存检查时间文件的目录
 os.makedirs('check', exist_ok=True)
@@ -24,6 +25,9 @@ def get_feed_title(feed):
     else:
         return 'Unknown Feed'
 
+def decode_html_entities(text):
+    return html.unescape(text)
+
 def check_and_notify():
     updated = False
     message_content = ""
@@ -31,7 +35,7 @@ def check_and_notify():
     for rss_url in rss_list:
         rss_url = rss_url.strip()
         try:
-            feed = feedparser.parse(rss_url)
+            feed = feedparser.parse(rss_url, request_headers={'Accept-Charset': 'utf-8'})
         except (URLError, HTTPError, RemoteDisconnected) as e:
             print(f"访问 {rss_url} 出错: {e}")
             continue
@@ -41,26 +45,24 @@ def check_and_notify():
         
         print(f"检查RSS源: {feed_title}")
         
-        # 读取上次检查时间
         if os.path.exists(last_check_file):
             with open(last_check_file, 'r') as f:
                 last_check_time = float(f.read().strip())
         else:
             last_check_time = 0
         
-        new_entries = [entry for entry in feed.entries if entry.get('published_parsed') and time.mktime(entry.published_parsed) > last_check_time]
+        new_entries = [entry for entry in feed.entries if (entry.get('published_parsed') or entry.get('updated_parsed')) and time.mktime(entry.get('published_parsed', entry.get('updated_parsed'))) > last_check_time]
         
         if new_entries:
             updated = True
             for entry in new_entries:
-                entry_title = entry.get('title', 'No Title')
+                entry_title = decode_html_entities(entry.get('title', 'No Title'))
                 entry_link = entry.get('link', 'No Link')
                 message_content += f"RSS源: {feed_title}\n"
                 message_content += f"文章标题: {entry_title}\n"
                 message_content += f"文章链接: {entry_link}\n\n"
             
-            # 更新最后检查时间
-            latest_time = max(time.mktime(entry.published_parsed) for entry in new_entries)
+            latest_time = max(time.mktime(entry.get('published_parsed', entry.get('updated_parsed'))) for entry in new_entries)
             with open(last_check_file, 'w') as f:
                 f.write(str(latest_time))
         else:
