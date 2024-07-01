@@ -6,6 +6,8 @@ import os
 import time
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
+from bs4 import BeautifulSoup  # 新增的库
+import lxml  # 新增的库
 
 # 创建保存检查时间文件的目录
 os.makedirs('check', exist_ok=True)
@@ -13,6 +15,26 @@ os.makedirs('check', exist_ok=True)
 # 读取RSS列表
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
+
+def parse_rss_content(feed):
+    """
+    使用BeautifulSoup和lxml解析RSS内容，提取所需信息
+    """
+    parsed_entries = []
+    for entry in feed.entries:
+        # 使用BeautifulSoup解析entry内容
+        soup = BeautifulSoup(entry.description, 'lxml')
+        entry_title = entry.get('title', 'No Title')
+        entry_link = entry.get('link', 'No Link')
+        entry_content = soup.get_text()
+
+        parsed_entries.append({
+            'title': entry_title,
+            'link': entry_link,
+            'content': entry_content,
+            'published_parsed': entry.get('published_parsed')
+        })
+    return parsed_entries
 
 def check_and_notify():
     updated = False
@@ -38,19 +60,20 @@ def check_and_notify():
         else:
             last_check_time = 0
         
-        new_entries = [entry for entry in feed.entries if entry.get('published_parsed') and time.mktime(entry.published_parsed) > last_check_time]
+        # 使用parse_rss_content函数解析RSS内容
+        parsed_entries = parse_rss_content(feed)
+        new_entries = [entry for entry in parsed_entries if entry['published_parsed'] and time.mktime(entry['published_parsed']) > last_check_time]
         
         if new_entries:
             updated = True
             for entry in new_entries:
-                entry_title = entry.get('title', 'No Title')
-                entry_link = entry.get('link', 'No Link')
                 message_content += f"RSS源: {feed_title}\n"
-                message_content += f"文章标题: {entry_title}\n"
-                message_content += f"文章链接: {entry_link}\n\n"
+                message_content += f"文章标题: {entry['title']}\n"
+                message_content += f"文章链接: {entry['link']}\n"
+                message_content += f"文章内容: {entry['content']}\n\n"
             
             # 更新最后检查时间
-            latest_time = max(time.mktime(entry.published_parsed) for entry in new_entries)
+            latest_time = max(time.mktime(entry['published_parsed']) for entry in new_entries)
             with open(last_check_file, 'w') as f:
                 f.write(str(latest_time))
         else:
