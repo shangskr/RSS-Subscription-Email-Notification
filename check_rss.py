@@ -18,8 +18,15 @@ with open('rss_list.txt', 'r') as file:
     rss_list.extend([line.strip() for line in file.readlines()])
 
 # 读取特定的RSS源链接列表
-with open('feed.txt', 'r') as feed_file:
-    feed_urls = [line.strip() for line in feed_file.readlines()]
+feed_file_path = 'feed.txt'
+if os.path.exists(feed_file_path):
+    with open(feed_file_path, 'r') as feed_file:
+        feed_urls = [line.strip() for line in feed_file.readlines()]
+else:
+    feed_urls = []
+    print(f"未找到文件: {feed_file_path}")
+
+print(f"从 feed.txt 中读取的RSS链接: {feed_urls}")
 
 def fetch_feed(rss_url):
     try:
