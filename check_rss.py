@@ -51,7 +51,7 @@ def check_and_notify():
     for rss_url in rss_list:
         rss_url = rss_url.strip()
         
-        if 'tianli-blog.club/feed/' in rss_url:
+        if '' in rss_url:
             feed = fetch_feed_with_requests(tianli_blog_feed)
         else:
             feed = fetch_feed(rss_url)
