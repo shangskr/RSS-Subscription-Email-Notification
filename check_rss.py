@@ -7,7 +7,6 @@ import time
 import requests
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
-from socket import timeout as TimeoutError
 
 # 创建保存检查时间文件的目录
 os.makedirs('check', exist_ok=True)
@@ -18,26 +17,15 @@ with open('rss_list.txt', 'r') as file:
 
 def fetch_feed(rss_url):
     try:
-        feed = feedparser.parse(rss_url)
-        return feed
-    except (URLError, HTTPError, RemoteDisconnected, TimeoutError) as e:
-        print(f"使用 feedparser 获取 {rss_url} 出错: {e}")
-        return None
-
-def fetch_feed_with_requests(rss_url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept-Language': 'en-US,en;q=0.9',
-    }
-    
-    try:
-        response = requests.get(rss_url, headers=headers, timeout=10)  # 设置超时时间为10秒
+        headers = {'User-Agent': 'Mozilla/5.0'}  # 默认使用模拟浏览器的 User-Agent
+        if 'tianli-blog.club' not in rss_url:  # 如果不是特定网站，则使用默认 headers
+            headers = {}
+        
+        response = requests.get(rss_url, headers=headers)
         response.raise_for_status()
         feed = feedparser.parse(response.content)
         return feed
-    except (requests.exceptions.RequestException, URLError, HTTPError, RemoteDisconnected, TimeoutError) as e:
+    except (requests.exceptions.RequestException, URLError, HTTPError, RemoteDisconnected) as e:
         print(f"访问 {rss_url} 出错: {e}")
         return None
 
@@ -50,8 +38,8 @@ def check_and_notify():
         feed = fetch_feed(rss_url)
         
         if not feed or not feed.entries:
-            print(f"使用 feedparser 获取 {rss_url} 失败，尝试使用 requests 再获取一次")
-            feed = fetch_feed_with_requests(rss_url)
+            print(f"第一次获取 {rss_url} 失败，尝试使用 requests 再获取一次")
+            feed = fetch_feed(rss_url)
 
         if not feed or not feed.entries:
             print(f"访问 {rss_url} 失败两次，跳过")
