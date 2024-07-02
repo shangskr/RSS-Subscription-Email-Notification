@@ -2,7 +2,7 @@ name: RSS Check
 
 on:
   schedule:
-    - cron: "0 22 */2 * *"  # 每两天的晚上10点运行
+    - cron: "0 22 */2 * *"
   workflow_dispatch:
 
 jobs:
@@ -34,10 +34,6 @@ jobs:
         SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
         SMTP_PORT: ${{ secrets.SMTP_PORT }}
       run: |
-        # 调试输出，确认文件是否能够被读取
-        cat ./feed.txt
-
-        # 运行 Python 脚本检查 RSS
         python check_rss.py
         
     - name: Commit changes
