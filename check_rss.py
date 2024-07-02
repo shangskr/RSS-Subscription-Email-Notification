@@ -7,7 +7,7 @@ import time
 import requests
 from urllib.error import URLError, HTTPError
 from http.client import RemoteDisconnected
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 # 创建保存检查时间文件的目录
 os.makedirs('check', exist_ok=True)
@@ -19,7 +19,6 @@ with open('rss_list.txt', 'r') as file:
 # 特殊解析的RSS链接列表
 special_rss_urls = [
     'https://tianli-blog.club/feed/',
-    'https://www.anxkj.top/feed/',
     # 在这里添加其他需要特殊处理的RSS链接
 ]
 
@@ -63,7 +62,7 @@ def process_rss(rss_url):
 
     if not feed or not feed.entries:
         print(f"访问 {rss_url} 失败两次，跳过")
-        return None
+        return
 
     feed_title = feed.feed.get('title', 'Unknown Feed').replace(" ", "_")
     last_check_file = os.path.join('check', f"{feed_title}_last_check.txt")
@@ -99,11 +98,16 @@ def process_rss(rss_url):
         send_email("RSS更新提醒", message_content)
 
 def check_and_notify():
-    with ThreadPoolExecutor(max_workers=5) as executor:  # 根据需要调整最大工作线程数
-        futures = [executor.submit(process_rss, rss_url.strip()) for rss_url in rss_list]
+    threads = []
+    for rss_url in rss_list:
+        rss_url = rss_url.strip()
+        thread = threading.Thread(target=process_rss, args=(rss_url,))
+        threads.append(thread)
+        thread.start()
 
-        for future in as_completed(futures):
-            future.result()
+    # 等待所有线程完成
+    for thread in threads:
+        thread.join()
 
 def send_email(subject, message):
     msg = MIMEMultipart()
