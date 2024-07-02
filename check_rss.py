@@ -20,6 +20,14 @@ feed_txt_path = os.path.join(os.getcwd(), 'feed.txt')
 with open(feed_txt_path, 'r') as feed_file:
     tianli_blog_feed = feed_file.readline().strip()
 
+# headers 设置
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Language': 'en-US,en;q=0.9',
+}
+
 def fetch_feed(rss_url):
     try:
         feed = feedparser.parse(rss_url)
@@ -29,13 +37,6 @@ def fetch_feed(rss_url):
         return None
 
 def fetch_feed_with_requests(rss_url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept-Language': 'en-US,en;q=0.9',
-    }
-    
     try:
         response = requests.get(rss_url, headers=headers)
         response.raise_for_status()
