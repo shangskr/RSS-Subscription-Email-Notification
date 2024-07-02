@@ -15,6 +15,12 @@ os.makedirs('check', exist_ok=True)
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
+# 特殊解析的RSS链接列表
+special_rss_urls = [
+    'https://tianli-blog.club/feed/',
+    # 在这里添加其他需要特殊处理的RSS链接
+]
+
 def fetch_feed(rss_url):
     try:
         feed = feedparser.parse(rss_url)
@@ -47,7 +53,7 @@ def check_and_notify():
     for rss_url in rss_list:
         rss_url = rss_url.strip()
         
-        if 'tianli-blog.club/feed/' in rss_url:
+        if rss_url in special_rss_urls:
             feed = fetch_feed_with_requests(rss_url)
         else:
             feed = fetch_feed(rss_url)
