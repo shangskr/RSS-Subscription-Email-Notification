@@ -18,6 +18,7 @@ with open('rss_list.txt', 'r') as file:
 # 特殊解析的RSS链接列表
 special_rss_urls = [
     'https://tianli-blog.club/feed/',
+    'https://www.anxkj.top/feed/',
     # 在这里添加其他需要特殊处理的RSS链接
 ]
 
