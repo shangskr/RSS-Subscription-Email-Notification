@@ -15,6 +15,11 @@ os.makedirs('check', exist_ok=True)
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
+# 读取根目录下的feed.txt文件获取RSS源链接
+feed_txt_path = os.path.join(os.getcwd(), 'feed.txt')
+with open(feed_txt_path, 'r') as feed_file:
+    tianli_blog_feed = feed_file.readline().strip()
+
 def fetch_feed(rss_url):
     try:
         feed = feedparser.parse(rss_url)
@@ -47,7 +52,10 @@ def check_and_notify():
     for rss_url in rss_list:
         rss_url = rss_url.strip()
         
-        feed = fetch_feed(rss_url)
+        if rss_url == tianli_blog_feed:
+            feed = fetch_feed_with_requests(tianli_blog_feed)
+        else:
+            feed = fetch_feed(rss_url)
         
         if not feed or not feed.entries:
             print(f"使用 feedparser 获取 {rss_url} 失败，尝试使用 requests 再获取一次")
