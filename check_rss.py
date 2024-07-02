@@ -48,10 +48,9 @@ def fetch_feed_with_requests(rss_url):
         print(f"访问 {rss_url} 出错: {e}")
         return None
 
-def process_rss(rss_url):
-    updated = False
-    message_content = ""
-
+def check_and_notify_single(rss_url):
+    rss_url = rss_url.strip()
+    
     if rss_url in special_rss_urls:
         feed = fetch_feed_with_requests(rss_url)
     else:
@@ -80,7 +79,7 @@ def process_rss(rss_url):
     new_entries = [entry for entry in feed.entries if entry.get('published_parsed') and time.mktime(entry.published_parsed) > last_check_time]
 
     if new_entries:
-        updated = True
+        message_content = ""
         for entry in new_entries:
             entry_title = entry.get('title', 'No Title')
             entry_link = entry.get('link', 'No Link')
@@ -92,18 +91,29 @@ def process_rss(rss_url):
         latest_time = max(time.mktime(entry.published_parsed) for entry in new_entries)
         with open(last_check_file, 'w') as f:
             f.write(str(latest_time))
+
+        return feed_title, message_content
     else:
         print(f"{feed_title} 没有新文章")
+        return None, None
+
+def check_and_notify():
+    updated = False
+    message_content = ""
+
+    with ThreadPoolExecutor(max_workers=5) as executor:  # 根据需要调整最大工作线程数
+        futures = [executor.submit(check_and_notify_single, rss_url) for rss_url in rss_list]
+        
+        for future in as_completed(futures):
+            feed_title, feed_content = future.result()
+            if feed_content:
+                updated = True
+                message_content += feed_content
 
     if updated:
         send_email("RSS更新提醒", message_content)
-
-def check_and_notify():
-    with ThreadPoolExecutor(max_workers=5) as executor:  # 根据需要调整最大工作线程数
-        futures = [executor.submit(process_rss, rss_url.strip()) for rss_url in rss_list]
-
-        for future in as_completed(futures):
-            future.result()
+    else:
+        print("没有RSS源更新")
 
 def send_email(subject, message):
     msg = MIMEMultipart()
