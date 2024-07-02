@@ -15,10 +15,6 @@ os.makedirs('check', exist_ok=True)
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
-# 读取特定的RSS源链接
-with open('feed.txt', 'r') as feed_file:
-    tianli_blog_feed = feed_file.readline().strip()
-
 def fetch_feed(rss_url):
     try:
         feed = feedparser.parse(rss_url)
@@ -52,7 +48,7 @@ def check_and_notify():
         rss_url = rss_url.strip()
         
         if 'tianli-blog.club/feed/' in rss_url:
-            feed = fetch_feed_with_requests(tianli_blog_feed)
+            feed = fetch_feed_with_requests(rss_url)
         else:
             feed = fetch_feed(rss_url)
         
