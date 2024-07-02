@@ -15,18 +15,9 @@ os.makedirs('check', exist_ok=True)
 with open('rss_list.txt', 'r') as file:
     rss_list = file.readlines()
 
-# 读取根目录下的feed.txt文件获取RSS源链接
-feed_txt_path = os.path.join(os.getcwd(), 'feed.txt')
-with open(feed_txt_path, 'r') as feed_file:
+# 读取特定的RSS源链接
+with open('feed.txt', 'r') as feed_file:
     tianli_blog_feed = feed_file.readline().strip()
-
-# headers 设置
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'Accept-Language': 'en-US,en;q=0.9',
-}
 
 def fetch_feed(rss_url):
     try:
@@ -37,6 +28,13 @@ def fetch_feed(rss_url):
         return None
 
 def fetch_feed_with_requests(rss_url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
+    
     try:
         response = requests.get(rss_url, headers=headers)
         response.raise_for_status()
@@ -53,7 +51,7 @@ def check_and_notify():
     for rss_url in rss_list:
         rss_url = rss_url.strip()
         
-        if rss_url == tianli_blog_feed:
+        if 'tianli-blog.club/feed/' in rss_url:
             feed = fetch_feed_with_requests(tianli_blog_feed)
         else:
             feed = fetch_feed(rss_url)
